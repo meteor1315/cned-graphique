@@ -35,7 +35,7 @@ const today = {id:'today', afterDraw(ch){
 new Chart(document.getElementById('c'), {
   type:'line',
   data:{labels:D.labels, datasets:[
-    {label:'Attendus cumulés', data:D.att, borderColor:'#3b82f6', backgroundColor:'#3b82f6', pointRadius:4, tension:0},
+    {label:'Attendus cumulés', data:D.att, borderColor:'#3b82f6', backgroundColor:'#3b82f6', pointRadius:4, tension:0, spanGaps:true},
     {label:'Rendus cumulés', data:D.ren, borderColor:'#22c55e', backgroundColor:'#22c55e', pointRadius:4, tension:0, spanGaps:false}
   ]},
   options:{responsive:true, maintainAspectRatio:false,
@@ -96,16 +96,17 @@ for row in rows:
                  "rendus": num(txt(p["Devoirs rendus"]))})
 
 df = pd.DataFrame(data).sort_values("date").reset_index(drop=True)
-df["att_cum"] = df["attendus"].fillna(0).cumsum()
+df["att_cum"] = df["attendus"].cumsum()
 df["ren_cum"] = df["rendus"].fillna(0).cumsum()
 derniere = df["rendus"].last_valid_index()
 ren = df.loc[:derniere] if derniere is not None else df.iloc[0:0]
+att = df.dropna(subset=["att_cum"])
 print(df)
 
 payload = {
     "labels": [d.strftime("%d/%m/%y") for d in df["date"]],
     "ts": [int(d.timestamp() * 1000) for d in df["date"]],
-    "att": [float(v) for v in df["att_cum"]],
+    "att": [None if pd.isna(v) else float(v) for v in df["att_cum"]],
     "ren": [float(v) for v in ren["ren_cum"]] + [None] * (len(df) - len(ren)),
     "maj": dt.datetime.now().strftime("%d/%m/%Y %H:%M"),
 }
@@ -113,7 +114,7 @@ with open("index.html", "w", encoding="utf-8") as f:
     f.write(HTML.replace("__DATA__", json.dumps(payload)))
 
 fig, ax = plt.subplots(figsize=(10, 5))
-ax.plot(df["date"], df["att_cum"], marker="o", color="#3b82f6", label="Attendus cumulés")
+ax.plot(att["date"], att["att_cum"], marker="o", color="#3b82f6", label="Attendus cumulés")
 ax.plot(ren["date"], ren["ren_cum"], marker="o", color="#22c55e", label="Rendus cumulés")
 ax.axvline(dt.datetime.now(), ls="--", color="gray", label="Aujourd'hui")
 ax.set_title("Progression des devoirs CNED")
