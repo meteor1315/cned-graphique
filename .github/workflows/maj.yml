@@ -18,11 +18,14 @@ jobs:
       - run: python graphique.py
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+      - run: python moyennes.py
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
       - name: Enregistrer les fichiers
         run: |
           git config user.name "bot"
           git config user.email "bot@users.noreply.github.com"
-          git add progression_devoirs.png index.html
+          git add progression_devoirs.png index.html moyennes.html
           git commit -m "maj graphique" || exit 0
           git push
       - name: Lancer le deploiement Pages
